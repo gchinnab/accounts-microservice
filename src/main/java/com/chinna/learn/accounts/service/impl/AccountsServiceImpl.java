@@ -1,10 +1,13 @@
 package com.chinna.learn.accounts.service.impl;
 
 import com.chinna.learn.accounts.constants.AccountsConstants;
+import com.chinna.learn.accounts.dto.AccountsDto;
 import com.chinna.learn.accounts.dto.CustomerDto;
 import com.chinna.learn.accounts.entity.Accounts;
 import com.chinna.learn.accounts.entity.Customer;
 import com.chinna.learn.accounts.exception.CustomerAlreadyExistsException;
+import com.chinna.learn.accounts.exception.ResourceNotFoundException;
+import com.chinna.learn.accounts.mapper.AccountsMapper;
 import com.chinna.learn.accounts.mapper.CustomerMapper;
 import com.chinna.learn.accounts.repository.AccountsRepository;
 import com.chinna.learn.accounts.repository.CustomerRepository;
@@ -35,6 +38,23 @@ public class AccountsServiceImpl implements IAccountsService {
         customer.setCreatedBy("Anonymous User");
         Customer savedCustomer = customerRepository.save(customer);
         accountsRepository.save(createNewAccount(savedCustomer));
+    }
+
+    /**
+     * @param mobileNumber - Input Mobile Number
+     * @return Accounts Details based on a given mobileNumber
+     */
+    @Override
+    public CustomerDto fetchAccount(String mobileNumber) {
+        Customer customer = customerRepository.findByMobileNumber(mobileNumber).orElseThrow(
+                () -> new ResourceNotFoundException("Customer", "mobileNumber", mobileNumber)
+        );
+        Accounts accounts = accountsRepository.findByCustomerId(customer.getCustomerId()).orElseThrow(
+                () -> new ResourceNotFoundException("Account", "customerId", customer.getCustomerId().toString())
+        );
+        CustomerDto customerDto = CustomerMapper.mapToCustomerDto(customer, new CustomerDto());
+        customerDto.setAccountsDto(AccountsMapper.mapToAccountsDto(accounts, new AccountsDto()));
+        return customerDto;
     }
 
     /**
